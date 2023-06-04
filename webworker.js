@@ -1,8 +1,8 @@
 importScripts("https://cdn.jsdelivr.net/pyodide/v0.23.2/full/pyodide.js");
 
 function log(line) {
-  console.log({line})
-  self.postMessage({type: 'log', line: line});
+  console.log({ line });
+  self.postMessage({ type: "log", line: line });
 }
 
 async function startDatasette(settings) {
@@ -11,11 +11,11 @@ async function startDatasette(settings) {
   let needsDataDb = false;
   let shouldLoadDefaults = true;
   if (settings.initialUrl) {
-    let name = settings.initialUrl.split('.db')[0].split('/').slice(-1)[0];
+    let name = settings.initialUrl.split(".db")[0].split("/").slice(-1)[0];
     toLoad.push([name, settings.initialUrl]);
     shouldLoadDefaults = false;
   }
-  ['csv', 'sql', 'json', 'parquet'].forEach(sourceType => {
+  ["csv", "sql", "json", "parquet"].forEach((sourceType) => {
     if (settings[`${sourceType}Urls`] && settings[`${sourceType}Urls`].length) {
       sources.push([sourceType, settings[`${sourceType}Urls`]]);
       needsDataDb = true;
@@ -31,14 +31,16 @@ async function startDatasette(settings) {
   if (shouldLoadDefaults) {
     toLoad.push(["fixtures.db", "https://latest.datasette.io/fixtures.db"]);
     toLoad.push(["content.db", "https://datasette.io/content.db"]);
+    toLoad.push(["zeropm_20230316.db"], "https://github.com/yejiyang/temp_test/blob/main/zeropm_20230316_2.db");
+    toLoad.push(["Car_Database.db"], "https://github.com/yejiyang/temp_test/blob/main/Car_Database_1.db");
   }
   self.pyodide = await loadPyodide({
     indexURL: "https://cdn.jsdelivr.net/pyodide/v0.23.2/full/",
-    fullStdLib: true
+    fullStdLib: true,
   });
-  await pyodide.loadPackage('micropip', {messageCallback: log});
-  await pyodide.loadPackage('ssl', {messageCallback: log});
-  await pyodide.loadPackage('setuptools', {messageCallback: log}); // For pkg_resources
+  await pyodide.loadPackage("micropip", { messageCallback: log });
+  await pyodide.loadPackage("ssl", { messageCallback: log });
+  await pyodide.loadPackage("setuptools", { messageCallback: log }); // For pkg_resources
   try {
     await self.pyodide.runPythonAsync(`
     # https://github.com/pyodide/pyodide/issues/3880#issuecomment-1560130092
@@ -68,7 +70,7 @@ async function startDatasette(settings) {
         for install_url in install_urls:
             await micropip.install(install_url)
     # Execute any ?sql=URL SQL
-    sqls = ${JSON.stringify(sources.filter(source => source[0] === "sql")[0]?.[1] || [])}
+    sqls = ${JSON.stringify(sources.filter((source) => source[0] === "sql")[0]?.[1] || [])}
     if sqls:
         for sql_url in sqls:
             # Fetch that SQL and execute it
@@ -79,7 +81,7 @@ async function startDatasette(settings) {
         "about": "Datasette Lite",
         "about_url": "https://github.com/simonw/datasette-lite"
     }
-    metadata_url = ${JSON.stringify(settings.metadataUrl || '')}
+    metadata_url = ${JSON.stringify(settings.metadataUrl || "")}
     if metadata_url:
         response = await pyfetch(metadata_url)
         content = await response.string()
@@ -87,7 +89,7 @@ async function startDatasette(settings) {
         metadata = parse_metadata(content)
 
     # Import data from ?csv=URL CSV files/?json=URL JSON files
-    sources = ${JSON.stringify(sources.filter(source => ['csv', 'json', 'parquet'].includes(source[0])))}
+    sources = ${JSON.stringify(sources.filter((source) => ["csv", "json", "parquet"].includes(source[0])))}
     if sources:
         await micropip.install("sqlite-utils==3.28")
         import sqlite_utils, json
@@ -155,25 +157,25 @@ async function startDatasette(settings) {
     from datasette.app import Datasette
     ds = Datasette(names, settings={
         "num_sql_threads": 0,
-    }, metadata=metadata, memory=${settings.memory ? 'True' : 'False'})
+    }, metadata=metadata, memory=${settings.memory ? "True" : "False"})
     await ds.invoke_startup()
     `);
     datasetteLiteReady();
   } catch (error) {
-    self.postMessage({error: error.message});
+    self.postMessage({ error: error.message });
   }
 }
 
 // Outside promise pattern
 // https://github.com/simonw/datasette-lite/issues/25#issuecomment-1116948381
 let datasetteLiteReady;
-let readyPromise = new Promise(function(resolve) {
+let readyPromise = new Promise(function (resolve) {
   datasetteLiteReady = resolve;
 });
 
 self.onmessage = async (event) => {
-  console.log({event, data: event.data});
-  if (event.data.type == 'startup') {
+  console.log({ event, data: event.data });
+  if (event.data.type == "startup") {
     await startDatasette(event.data);
     return;
   }
@@ -191,8 +193,8 @@ self.onmessage = async (event) => {
       [response.status_code, response.headers.get("content-type"), response.text]
       `
     );
-    self.postMessage({status, contentType, text});
+    self.postMessage({ status, contentType, text });
   } catch (error) {
-    self.postMessage({error: error.message});
+    self.postMessage({ error: error.message });
   }
 };
