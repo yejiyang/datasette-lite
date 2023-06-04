@@ -1,0 +1,7 @@
+version: '3'
+services:
+  datasette-lite:
+    image: datasette-lite
+    build: .
+    ports:
+      - "8009:8009"
